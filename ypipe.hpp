@@ -111,7 +111,7 @@ public:
             return true;
 
         //  Try to set 'c' to 'f'.
-        // read时如果没有数据可以读取则c的值会被置为NULL
+        // read时如果没有数据可以读取则c的值会被置为NULL,正常情况下c==w
         if (c.cas(w, f) != w) // 尝试将c设置为f，即是准备更新w的位置
         {
 
@@ -138,7 +138,7 @@ public:
     inline bool check_read()
     {
         //  Was the value prefetched already? If so, return.
-        if (&queue.front() != r && r) //判断是否在前几次调用read函数时已经预取数据了return true;
+        if (&queue.front() != r && r) //判断是否在前几次调用read函数时已经预取数据了return true;（当c=NULL时，r也为NULL，这时代表没数据可读，因此保证r不为NULL，才能算预取了）
             return true;
 
         //  There's no prefetched value, so let us prefetch more values.
@@ -148,7 +148,7 @@ public:
         // 两种情况
         // 1. 如果c值和queue.front()， 返回c值并将c值置为NULL，此时没有数据可读
         // 2. 如果c值和queue.front()， 返回c值，此时可能有数据度的去
-        r = c.cas(&queue.front(), NULL); //尝试预取数据 (c一般为f，因此r一般为f,queue.front()到f之间的就是预读数据)
+        r = c.cas(&queue.front(), NULL); //尝试预取数据 (c一般为f，因此r一般为f,queue.front()到f之间的就是预读数据)（如果c为NULL，那么对应r也会为NULL）
 
         //  If there are no elements prefetched, exit.
         //  During pipe's lifetime r should never be NULL, however,
@@ -199,7 +199,7 @@ protected:
 
     //  Points to the first un-prefetched item. This variable is used
     //  exclusively by reader thread.
-    T *r; //指向第一个还没预提取的元素，只被读线程使用
+    T *r; //指向第一个还没预提取的元素，只被读线程使用（也就是说queue.front()和r之间的就是预读的数据）
 
     //  Points to the first item to be flushed in the future.
     T *f; //指向下一轮要被刷新的一批元素中的第一个

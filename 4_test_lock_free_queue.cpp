@@ -65,7 +65,7 @@ public:
   // 返回0说明正常
   int Enqueue(int val)
   {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::mutex> lock(mutex_);//构造时候加锁，销毁时解锁
     queue_.push(val);
 
     cond_.notify_one();
